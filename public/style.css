@@ -1,0 +1,8 @@
+body { font-family: Arial, sans-serif; background: #f7f7f7; margin: 0; }
+.container { max-width: 400px; margin: 60px auto; background: #fff; padding: 2em 2em 1em 2em; border-radius: 8px; box-shadow: 0 2px 8px #0001; }
+h1 { margin-top: 0; }
+form { display: flex; gap: 0.5em; }
+input[type="text"] { flex: 1; padding: 0.5em; border: 1px solid #bbb; border-radius: 4px; }
+button { padding: 0.5em 1.2em; background: #2d7a2d; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+button:hover { background: #256325; }
+.error { color: #b00; margin-top: 1em; min-height: 1.5em; }
