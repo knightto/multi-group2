@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const path = require('path');
 
 const Group = require('./models/Group');
-const eventsRouter = require('./routes/events');
+// const eventsRouter = require('./routes/events');
 const groupAdminRouter = require('./routes/groupAdmin');
 const subscribersRouter = require('./routes/subscribers');
 const uploadLogoRouter = require('./routes/upload-logo');
@@ -28,7 +28,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '../public')));
 
 // --- API routers ---
-app.use('/api/events', eventsRouter);
+// app.use('/api/events', eventsRouter);
 app.use('/api/group-admin', groupAdminRouter);
 app.use('/api/subscribers', subscribersRouter);
 app.use('/api/upload-logo', uploadLogoRouter);
