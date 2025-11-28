@@ -7,15 +7,120 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container" id="adminContainer">
-    <h1>Site Admin Dashboard</h1>
-    <div id="adminAuth">
-      <input type="password" id="adminCodeInput" placeholder="Admin Code">
-      <button id="adminLoginBtn">Login</button>
+  <div class="admin-card" id="adminContainer">
+    <h1 class="admin-title">⛳ Site Admin Dashboard</h1>
+    <div id="adminAuth" class="admin-auth-panel">
+      <input type="password" id="adminCodeInput" placeholder="Admin Code" class="admin-input">
+      <button id="adminLoginBtn" class="primary">Login</button>
       <div id="adminError" class="error"></div>
     </div>
     <div id="adminContent" style="display:none;"></div>
   </div>
+  <style>
+    body { background: var(--golf-green-pale, #a8d5a8); min-height: 100vh; }
+    .admin-card {
+      width: auto;
+      min-width: 320px;
+      max-width: 98vw;
+      margin: 60px auto;
+      background: var(--panel, #fff);
+      border-radius: 18px;
+      box-shadow: 0 8px 32px rgba(26,90,26,0.18);
+      padding: 2.5em 2.5em 2em 2.5em;
+      border: 2px solid var(--golf-green-fairway, #6bb36b);
+      height: auto;
+      transition: width 0.2s, height 0.2s;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .admin-title {
+      margin-top: 0;
+      color: var(--golf-green-dark, #1a5a1a);
+      text-align: center;
+      font-size: 2.1em;
+      letter-spacing: 0.5px;
+      text-shadow: 0 2px 8px rgba(26,90,26,0.08);
+    }
+    .admin-auth-panel {
+      display: flex;
+      gap: 0.7em;
+      justify-content: center;
+      margin-bottom: 2em;
+    }
+    .admin-input {
+      flex: 1;
+      padding: 0.7em 1em;
+      border-radius: 12px;
+      border: 1.5px solid var(--golf-green-fairway, #6bb36b);
+      font-size: 1.1em;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(26,90,26,0.06);
+    }
+    .error {
+      color: #b00;
+      margin-top: 1em;
+      min-height: 1.5em;
+      text-align: center;
+    }
+    #adminContent {
+      margin-top: 2em;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 1.5em;
+      background: var(--panel, #fff);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(26,90,26,0.07);
+    }
+    th, td {
+      padding: 0.7em 1em;
+      border-bottom: 1px solid var(--golf-green-fairway, #6bb36b);
+      text-align: left;
+    }
+    th {
+      background: var(--golf-green-light, #4a9d4a);
+      color: #fff;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    tr:last-child td { border-bottom: none; }
+    button, .primary {
+      background: linear-gradient(135deg, var(--golf-green, #2d7a2d) 0%, var(--golf-green-light, #4a9d4a) 100%);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.5em 1.2em;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(26,90,26,0.10);
+      transition: all 0.18s;
+    }
+    button:hover, .primary:hover {
+      background: linear-gradient(135deg, var(--golf-green-dark, #1a5a1a) 0%, var(--golf-green, #2d7a2d) 100%);
+      color: #fff;
+      transform: translateY(-2px);
+    }
+    form input, form select {
+      width: 100%;
+      margin-bottom: 0.8em;
+      padding: 0.6em 0.9em;
+      border-radius: 8px;
+      border: 1.5px solid var(--golf-green-fairway, #6bb36b);
+      font-size: 1em;
+      background: #fff;
+    }
+    form button {
+      width: auto;
+      margin-right: 0.5em;
+    }
+    @media (max-width: 700px) {
+      .admin-card { padding: 1.2em 0.5em; }
+      .admin-title { font-size: 1.3em; }
+    }
+  </style>
   <script src="admin.js"></script>
 </body>
 </html>

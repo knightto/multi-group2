@@ -12,9 +12,8 @@ const GroupSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 });
 
-GroupSchema.pre('save', function(next) {
+GroupSchema.pre('save', function() {
   this.updatedAt = Date.now();
-  next();
 });
 
 module.exports = mongoose.model('Group', GroupSchema);

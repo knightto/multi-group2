@@ -11,9 +11,17 @@ async function loadGroups() {
     showError(data.error || 'Failed to load groups');
     return;
   }
-  let html = `<h2>Groups</h2><table><tr><th>Name</th><th>Template</th><th>Created</th><th>Active</th><th>Actions</th></tr>`;
+  let html = `<h2>Groups</h2><table><tr><th>Logo</th><th>Name</th><th>Template</th><th>Created</th><th>Active</th><th>Admin Access Code</th><th>Actions</th></tr>`;
   for (const g of data) {
-    html += `<tr><td>${g.name}</td><td>${g.template}</td><td>${new Date(g.createdAt).toLocaleDateString()}</td><td>${g.isActive ? 'Yes' : 'No'}</td><td><button onclick="editGroup('${g._id}')">Edit</button></td></tr>`;
+    html += `<tr>
+      <td>${g.logoUrl ? `<img src="${g.logoUrl}" alt="logo" style="max-width:48px;max-height:48px;border-radius:6px;">` : ''}</td>
+      <td>${g.name}</td>
+      <td>${g.template}</td>
+      <td>${new Date(g.createdAt).toLocaleDateString()}</td>
+      <td>${g.isActive ? 'Yes' : 'No'}</td>
+      <td><code>${g.accessCode || ''}</code></td>
+      <td><button onclick="editGroup('${g._id}')">Edit</button></td>
+    </tr>`;
   }
   html += '</table>';
   html += `<button onclick="showCreateGroup()">Create New Group</button>`;
@@ -31,7 +39,8 @@ function showCreateGroup() {
         <option value="default">Default</option>
         <option value="social">Social</option>
       </select><br>
-      <input name="logoUrl" placeholder="Logo URL"><br>
+      <input name="logoUrl" placeholder="Logo URL (or upload below)"><br>
+      <input type="file" id="logoFileInput" accept="image/*" style="margin-bottom:1em;"><br>
       <button type="submit">Create</button>
       <button type="button" onclick="loadGroups()">Cancel</button>
     </form>
@@ -40,12 +49,29 @@ function showCreateGroup() {
   document.getElementById('createGroupForm').onsubmit = async function(e) {
     e.preventDefault();
     const form = e.target;
+    let logoUrl = form.logoUrl.value;
+    const fileInput = document.getElementById('logoFileInput');
+    if (fileInput && fileInput.files && fileInput.files[0]) {
+      const fileData = new FormData();
+      fileData.append('logo', fileInput.files[0]);
+      const uploadRes = await fetch('/api/upload-logo', {
+        method: 'POST',
+        body: fileData
+      });
+      const uploadJson = await uploadRes.json();
+      if (uploadRes.ok && uploadJson.url) {
+        logoUrl = uploadJson.url;
+      } else {
+        document.getElementById('formError').textContent = uploadJson.error || 'Logo upload failed';
+        return;
+      }
+    }
     const body = {
       adminCode,
       name: form.name.value,
       description: form.description.value,
       template: form.template.value,
-      logoUrl: form.logoUrl.value
+      logoUrl
     };
     const res = await fetch('/api/groups', {
       method: 'POST',
@@ -53,8 +79,16 @@ function showCreateGroup() {
       body: JSON.stringify(body)
     });
     const data = await res.json();
-    if (res.ok) loadGroups();
-    else document.getElementById('formError').textContent = data.error || 'Error creating group';
+    if (res.ok) {
+      loadGroups();
+    } else {
+      // Show specific error for duplicate group name or access code
+      if (res.status === 409 && data.error) {
+        document.getElementById('formError').textContent = data.error;
+      } else {
+        document.getElementById('formError').textContent = data.error || 'Error creating group';
+      }
+    }
   };
 }
 

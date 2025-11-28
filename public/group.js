@@ -1,86 +1,53 @@
-// Parse groupId from URL
-function getGroupId() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get('groupId');
-}
-
-async function loadGroup() {
-  const groupId = getGroupId();
-  if (!groupId) {
-    document.getElementById('groupHeader').innerHTML = '<p>Missing group ID.</p>';
-    return;
-  }
-  try {
-    const res = await fetch(`/api/groups/${groupId}`);
-    if (!res.ok) throw new Error('Group not found');
-    const group = await res.json();
-    let html = `<h1>${group.name}</h1>`;
-    if (group.logoUrl) html += `<img src="${group.logoUrl}" alt="Logo" style="max-width:120px;display:block;margin:1em 0;">`;
-    html += `<p>${group.description || ''}</p>`;
-    document.getElementById('groupHeader').innerHTML = html;
-    // Fetch and render events for this group
-    const eventsRes = await fetch(`/api/events/group/${groupId}`);
-    const events = await eventsRes.json();
-    if (!Array.isArray(events) || events.length === 0) {
-      document.getElementById('eventsSection').innerHTML = '<em>No upcoming events.</em>';
-      return;
-    }
     let eventsHtml = '';
     for (const event of events) {
       eventsHtml += `<div class="event-block"><h3>${event.name} <span style='font-size:0.8em;font-weight:normal;'>(${new Date(event.date).toLocaleString()})</span></h3>`;
       eventsHtml += `<div>${event.type === 'teeTime' ? 'Tee Time Event' : 'Team Event'}</div>`;
       if (event.description) eventsHtml += `<div>${event.description}</div>`;
-      if (event.type === 'teeTime') {
-        // Tee times
-        const teeTimesRes = await fetch(`/api/events/${event._id}/teetimes`);
-        const teeTimes = await teeTimesRes.json();
+      if (event.type === 'teeTime' && Array.isArray(event.teeTimes)) {
         eventsHtml += '<ul>';
-        for (const tt of teeTimes) {
-          eventsHtml += `<li><b>${tt.time}</b> (${tt.players.length}/${tt.maxPlayers})`;
+        event.teeTimes.forEach((tt, idx) => {
+          eventsHtml += `<li><b>${tt.time}</b> (${tt.slots.length}/${tt.maxPlayers})`;
           eventsHtml += '<ul>';
-          for (const p of tt.players) {
+          tt.slots.forEach(p => {
             eventsHtml += `<li>${p.name} (${p.email})</li>`;
-          }
+          });
           eventsHtml += '</ul>';
-          if (tt.players.length < tt.maxPlayers) {
-            eventsHtml += `<form class='signup-form' data-event='${event._id}' data-tt='${tt._id}'>
+          if (tt.slots.length < tt.maxPlayers) {
+            eventsHtml += `<form class='signup-form' data-event='${event._id}' data-tt='${idx}'>
               <input type='text' name='name' placeholder='Your Name' required>
               <input type='email' name='email' placeholder='Your Email' required>
               <button type='submit'>Sign Up</button>
             </form>`;
           }
-          eventsHtml += `<form class='remove-form' data-event='${event._id}' data-tt='${tt._id}'>
+          eventsHtml += `<form class='remove-form' data-event='${event._id}' data-tt='${idx}'>
             <input type='email' name='email' placeholder='Your Email' required>
             <button type='submit'>Remove Me</button>
           </form>`;
           eventsHtml += '</li>';
-        }
+        });
         eventsHtml += '</ul>';
-      } else if (event.type === 'team') {
-        // Teams
-        const teamsRes = await fetch(`/api/events/${event._id}/teams`);
-        const teams = await teamsRes.json();
+      } else if (event.type === 'team' && Array.isArray(event.teams)) {
         eventsHtml += '<ul>';
-        for (const team of teams) {
+        event.teams.forEach((team, idx) => {
           eventsHtml += `<li><b>${team.name}</b> (${team.players.length}/${team.maxPlayers})`;
           eventsHtml += '<ul>';
-          for (const p of team.players) {
+          team.players.forEach(p => {
             eventsHtml += `<li>${p.name} (${p.email})</li>`;
-          }
+          });
           eventsHtml += '</ul>';
           if (team.players.length < team.maxPlayers) {
-            eventsHtml += `<form class='signup-team-form' data-event='${event._id}' data-team='${team._id}'>
+            eventsHtml += `<form class='signup-team-form' data-event='${event._id}' data-team='${idx}'>
               <input type='text' name='name' placeholder='Your Name' required>
               <input type='email' name='email' placeholder='Your Email' required>
               <button type='submit'>Join Team</button>
             </form>`;
           }
-          eventsHtml += `<form class='remove-team-form' data-event='${event._id}' data-team='${team._id}'>
+          eventsHtml += `<form class='remove-team-form' data-event='${event._id}' data-team='${idx}'>
             <input type='email' name='email' placeholder='Your Email' required>
             <button type='submit'>Remove Me</button>
           </form>`;
           eventsHtml += '</li>';
-        }
+        });
         eventsHtml += '</ul>';
       }
       eventsHtml += '</div><hr>';
@@ -91,10 +58,10 @@ async function loadGroup() {
       form.onsubmit = async function(e) {
         e.preventDefault();
         const eventId = form.getAttribute('data-event');
-        const ttId = form.getAttribute('data-tt');
+        const ttIdx = form.getAttribute('data-tt');
         const name = form.name.value;
         const email = form.email.value;
-        const res = await fetch(`/api/events/${eventId}/teetimes/${ttId}/signup`, {
+        const res = await fetch(`/api/events/${eventId}/teetimes/${ttIdx}/signup`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, email })
@@ -107,9 +74,9 @@ async function loadGroup() {
       form.onsubmit = async function(e) {
         e.preventDefault();
         const eventId = form.getAttribute('data-event');
-        const ttId = form.getAttribute('data-tt');
+        const ttIdx = form.getAttribute('data-tt');
         const email = form.email.value;
-        const res = await fetch(`/api/events/${eventId}/teetimes/${ttId}/remove`, {
+        const res = await fetch(`/api/events/${eventId}/teetimes/${ttIdx}/remove`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email })
@@ -122,6 +89,33 @@ async function loadGroup() {
       form.onsubmit = async function(e) {
         e.preventDefault();
         const eventId = form.getAttribute('data-event');
+        const teamIdx = form.getAttribute('data-team');
+        const name = form.name.value;
+        const email = form.email.value;
+        const res = await fetch(`/api/events/${eventId}/teams/${teamIdx}/signup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email })
+        });
+        if (res.ok) loadGroup();
+        else alert('Signup failed: ' + (await res.json()).error);
+      };
+    });
+    document.querySelectorAll('.remove-team-form').forEach(form => {
+      form.onsubmit = async function(e) {
+        e.preventDefault();
+        const eventId = form.getAttribute('data-event');
+        const teamIdx = form.getAttribute('data-team');
+        const email = form.email.value;
+        const res = await fetch(`/api/events/${eventId}/teams/${teamIdx}/remove`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        if (res.ok) loadGroup();
+        else alert('Remove failed: ' + (await res.json()).error);
+      };
+    });
         const teamId = form.getAttribute('data-team');
         const name = form.name.value;
         const email = form.email.value;

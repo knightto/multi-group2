@@ -7,7 +7,10 @@ const Group = require('./models/Group');
 const eventsRouter = require('./routes/events');
 const groupAdminRouter = require('./routes/groupAdmin');
 const subscribersRouter = require('./routes/subscribers');
+const uploadLogoRouter = require('./routes/upload-logo');
+
 const globalSettingsRouter = require('./routes/globalSettings');
+const settingsRouter = require('./routes/settings');
 
 const app = express();
 
@@ -28,7 +31,10 @@ app.use(express.static(path.join(__dirname, '../public')));
 app.use('/api/events', eventsRouter);
 app.use('/api/group-admin', groupAdminRouter);
 app.use('/api/subscribers', subscribersRouter);
+app.use('/api/upload-logo', uploadLogoRouter);
+
 app.use('/api/global-settings', globalSettingsRouter);
+app.use('/api/settings', settingsRouter);
 
 // --- Helpers ---
 function checkAdminCode(code) {
@@ -77,6 +83,12 @@ app.post('/api/groups', async (req, res) => {
       return res.status(400).json({ error: 'Name is required' });
     }
 
+    // Check for duplicate group name
+    const existingName = await Group.findOne({ name });
+    if (existingName) {
+      return res.status(409).json({ error: 'A group with this name already exists. Please choose a different name.' });
+    }
+
     // Generate unique access code
     const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let accessCode;
@@ -101,6 +113,14 @@ app.post('/api/groups', async (req, res) => {
     await group.save();
     res.status(201).json(group);
   } catch (err) {
+    // Handle duplicate key error for accessCode
+    if (err.code === 11000 && err.keyPattern && err.keyPattern.accessCode) {
+      return res.status(409).json({ error: 'A group with this access code already exists. Please try again.' });
+    }
+    // Handle duplicate key error for legacy code index
+    if (err.code === 11000 && err.keyPattern && err.keyPattern.code) {
+      return res.status(409).json({ error: 'A group with a legacy code already exists. Please contact support.' });
+    }
     console.error('POST /api/groups error', err);
     res.status(500).json({ error: 'Server error' });
   }
@@ -189,7 +209,7 @@ app.get('/', (req, res) => {
 // --- Start server only after MongoDB connects ---
 async function start() {
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
+    await mongoose.connect(process.env.MONGODB_URI, { dbName: 'dev-tee-time-brs' });
     console.log('MongoDB connected');
 
     const PORT = process.env.PORT || 3000;
