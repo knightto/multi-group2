@@ -7,8 +7,7 @@ const Group = require('./models/Group');
 const eventsRouter = require('./routes/events');
 const groupAdminRouter = require('./routes/groupAdmin');
 const subscribersRouter = require('./routes/subscribers');
-const uploadLogoRouter = require('./routes/upload-logo');
-
+const uploadLogoRouter = require('./routes/uploadLogo');
 const globalSettingsRouter = require('./routes/globalSettings');
 const settingsRouter = require('./routes/settings');
 
@@ -34,6 +33,7 @@ app.use('/api/subscribers', subscribersRouter);
 app.use('/api/upload-logo', uploadLogoRouter);
 
 app.use('/api/global-settings', globalSettingsRouter);
+app.use('/api/upload-logo', uploadLogoRouter);
 app.use('/api/settings', settingsRouter);
 
 // --- Helpers ---
@@ -41,15 +41,15 @@ function checkAdminCode(code) {
   return code && code === process.env.ADMIN_CODE;
 }
 
-// --- Site-wide admin: list all groups ---
+// --- Site-wide admin: list all groups (optionally include archived) ---
 app.get('/api/groups', async (req, res) => {
   try {
-    const { adminCode } = req.query;
+    const { adminCode, showArchived } = req.query;
     if (!checkAdminCode(adminCode)) {
       return res.status(403).json({ error: 'Invalid admin code' });
     }
-
-    const groups = await Group.find({ isArchived: false }).sort('createdAt');
+    const filter = showArchived === 'true' ? {} : { isArchived: false };
+    const groups = await Group.find(filter).sort('createdAt');
     res.json(groups);
   } catch (err) {
     console.error('GET /api/groups error', err);
@@ -83,8 +83,9 @@ app.post('/api/groups', async (req, res) => {
       return res.status(400).json({ error: 'Name is required' });
     }
 
-    // Check for duplicate group name
-    const existingName = await Group.findOne({ name });
+
+    // Check for duplicate group name (not archived)
+    const existingName = await Group.findOne({ name, isArchived: false });
     if (existingName) {
       return res.status(409).json({ error: 'A group with this name already exists. Please choose a different name.' });
     }
@@ -92,14 +93,15 @@ app.post('/api/groups', async (req, res) => {
     // Generate unique access code
     const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let accessCode;
-    // Simple loop to avoid collisions
-    // eslint-disable-next-line no-constant-condition
+    let tries = 0;
     while (true) {
       accessCode = Array.from({ length: 6 }, () =>
         alphabet[Math.floor(Math.random() * alphabet.length)]
       ).join('');
       const existing = await Group.findOne({ accessCode });
       if (!existing) break;
+      tries++;
+      if (tries > 10) return res.status(500).json({ error: 'Could not generate unique access code.' });
     }
 
     const group = new Group({
@@ -139,6 +141,12 @@ app.put('/api/groups/:groupId', async (req, res) => {
       return res.status(404).json({ error: 'Group not found' });
     }
 
+    // Prevent duplicate name (not archived)
+    if (name && name !== group.name) {
+      const existing = await Group.findOne({ name, _id: { $ne: req.params.groupId }, isArchived: false });
+      if (existing) return res.status(409).json({ error: 'A group with this name already exists.' });
+    }
+
     if (name !== undefined) group.name = name;
     if (description !== undefined) group.description = description;
     if (template !== undefined) group.template = template;
@@ -172,6 +180,30 @@ app.delete('/api/groups/:groupId', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error('DELETE /api/groups/:groupId error', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// --- Restore (un-archive) group (site-wide admin only) ---
+app.post('/api/groups/:groupId/restore', async (req, res) => {
+  try {
+    const { adminCode } = req.body;
+    if (!checkAdminCode(adminCode)) {
+      return res.status(403).json({ error: 'Invalid admin code' });
+    }
+
+    const group = await Group.findById(req.params.groupId);
+    if (!group) {
+      return res.status(404).json({ error: 'Group not found' });
+    }
+
+    group.isArchived = false;
+    group.isActive = true;
+    await group.save();
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('POST /api/groups/:groupId/restore error', err);
     res.status(500).json({ error: 'Server error' });
   }
 });

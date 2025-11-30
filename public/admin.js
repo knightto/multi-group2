@@ -4,8 +4,8 @@ function showError(msg) {
   document.getElementById('adminError').textContent = msg;
 }
 
-async function loadGroups() {
-  const res = await fetch(`/api/groups?adminCode=${encodeURIComponent(adminCode)}`);
+async function loadGroups(showArchived = false) {
+  const res = await fetch(`/api/groups?adminCode=${encodeURIComponent(adminCode)}${showArchived ? '&showArchived=true' : ''}`);
   const data = await res.json();
   if (!res.ok) {
     showError(data.error || 'Failed to load groups');
@@ -13,19 +13,36 @@ async function loadGroups() {
   }
   let html = `<h2>Groups</h2><table><tr><th>Logo</th><th>Name</th><th>Template</th><th>Created</th><th>Active</th><th>Admin Access Code</th><th>Actions</th></tr>`;
   for (const g of data) {
-    html += `<tr>
+    html += `<tr${g.isArchived ? ' style="opacity:0.5;"' : ''}>
       <td>${g.logoUrl ? `<img src="${g.logoUrl}" alt="logo" style="max-width:48px;max-height:48px;border-radius:6px;">` : ''}</td>
       <td>${g.name}</td>
       <td>${g.template}</td>
       <td>${new Date(g.createdAt).toLocaleDateString()}</td>
       <td>${g.isActive ? 'Yes' : 'No'}</td>
       <td><code>${g.accessCode || ''}</code></td>
-      <td><button onclick="editGroup('${g._id}')">Edit</button></td>
-    </tr>`;
+      <td>`;
+    if (g.isArchived) {
+      html += `<button onclick="restoreGroup('${g._id}')">Restore</button>`;
+    } else {
+      html += `<button onclick="editGroup('${g._id}')">Edit</button>`;
+    }
+    html += `</td></tr>`;
   }
   html += '</table>';
-  html += `<button onclick="showCreateGroup()">Create New Group</button>`;
+  html += `<button onclick="showCreateGroup()">Create New Group</button> `;
+  html += `<button onclick="loadGroups(${!showArchived})">${showArchived ? 'Show Active Only' : 'Show Archived'}</button>`;
   document.getElementById('adminContent').innerHTML = html;
+}
+
+async function restoreGroup(id) {
+  if (!confirm('Restore this group?')) return;
+  const res = await fetch(`/api/groups/${id}/restore`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ adminCode })
+  });
+  if (res.ok) loadGroups(true);
+  else alert('Restore failed: ' + (await res.json()).error);
 }
 
 function showCreateGroup() {
