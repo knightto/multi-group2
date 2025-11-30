@@ -1,4 +1,3 @@
-.container { max-width: 400px; margin: 60px auto; background: #fff; padding: 2em 2em 1em 2em; border-radius: 8px; box-shadow: 0 2px 8px #0001; }
 h1 { margin-top: 0; }
 form { display: flex; gap: 0.5em; }
 input[type="text"] { flex: 1; padding: 0.5em; border: 1px solid #bbb; border-radius: 4px; }
@@ -40,3 +39,834 @@ body{margin:0;color:var(--ink);font:400 16px/1.5 system-ui,-apple-system,Segoe U
 	background-blend-mode:normal, overlay, normal;
 }
 /* ...rest of golf theme CSS from tee-time-brs... */
+
+/* Golf Green Theme v4.0 - Comprehensive Golf Color Scheme */
+:root{
+	/* Primary Golf Greens - Grass & Fairway */
+	--golf-green-dark:#1a5a1a;
+	--golf-green:#2d7a2d;
+	--golf-green-light:#4a9d4a;
+	--golf-green-fairway:#6bb36b;
+	--golf-green-pale:#a8d5a8;
+  
+	/* Accent Greens - Flag & Details */
+	--golf-accent:#1e8e3e;
+	--golf-flag:#d97706;
+	--golf-sand:#f4e4c1;
+	--golf-water:#3b82f6;
+  
+	/* Base Colors */
+	--green-900:#14532d; --green-800:#166534; --green-700:#15803d; --green-600:#16a34a; --green-500:#22c55e;
+	--slate-900:#0f172a; --slate-700:#334155; --slate-300:#cbd5e1; --slate-200:#e2e8f0;
+	--blue-600:#2563eb; --blue-700:#1d4ed8;
+  
+	/* UI Variables */
+	--panel:rgba(255,255,255,.97); --panel-ghost:rgba(255,255,255,.90);
+	--ink:#1a5a1a; --ink-2:#2d7a2d; --line:rgba(29,122,29,.15); --radius:16px;
+	--shadow:0 10px 30px rgba(26,90,26,.25); --shadow-sm:0 4px 12px rgba(26,90,26,.15);
+	--shadow-green:0 8px 24px rgba(29,122,29,.3);
+}
+*{box-sizing:border-box} html,body{height:100%}
+body{margin:0;color:var(--ink);font:400 16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+	background:linear-gradient(135deg, rgba(26,90,26,.75) 0%, rgba(45,122,45,.60) 50%, rgba(26,90,26,.75) 100%),
+	repeating-linear-gradient(90deg, transparent, transparent 100px, rgba(255,255,255,.03) 100px, rgba(255,255,255,.03) 102px),
+	url('./assets/cool-golf-clear-water-hazards-in-autumn-enlr3jq4slsvb0rd.jpg') center/cover fixed no-repeat;
+	background-blend-mode:normal, overlay, normal;
+}
+header{position:sticky;top:0;z-index:10;display:flex;gap:12px;align-items:center;justify-content:space-between;
+	padding:14px 20px;background:linear-gradient(135deg, var(--golf-green-dark) 0%, var(--golf-green) 100%);
+	backdrop-filter:saturate(130%) blur(8px);border-bottom:3px solid var(--golf-green-fairway);
+	box-shadow:0 4px 12px rgba(26,90,26,.4)}
+h1{margin:0;font-size:28px;letter-spacing:.2px;color:#ffffff;text-shadow:0 2px 4px rgba(0,0,0,.3)}
+h1::before{content:'⛳ ';filter:drop-shadow(0 2px 3px rgba(0,0,0,.2))}
+header .subscribe{margin-left:auto;display:flex;gap:8px;align-items:center}
+header input[type=email]{padding:.5rem .7rem;border-radius:12px;border:1px solid var(--slate-300);background:#fff;min-width:230px;box-shadow:var(--shadow-sm)}
+#subMsg{color:var(--slate-700);font-size:.9rem}
+main{padding:20px}
+
+/* Calendar Layout */
+.main-layout{
+	display:grid;
+	grid-template-columns:360px 1fr;
+	gap:24px;
+	max-width:1600px;
+	margin:0 auto;
+	align-items:start;
+}
+
+.calendar-sidebar{
+	background:var(--panel);
+	border:1px solid var(--line);
+	border-radius:var(--radius);
+	box-shadow:var(--shadow);
+	padding:20px;
+	position:sticky;
+	top:80px;
+}
+
+.calendar-header{
+	display:flex;
+	align-items:center;
+	justify-content:space-between;
+	margin-bottom:16px;
+	gap:12px;
+}
+
+.calendar-header h2{
+	margin:0;
+	font-size:18px;
+	font-weight:700;
+	color:var(--green-700);
+	text-align:center;
+	flex:1;
+}
+
+.calendar-header button.icon{
+	padding:8px 12px;
+	font-size:20px;
+	font-weight:700;
+}
+
+.calendar-grid{
+	display:grid;
+	grid-template-columns:repeat(7, 1fr);
+	gap:4px;
+	margin-bottom:20px;
+}
+
+.calendar-day-header{
+	text-align:center;
+	font-size:12px;
+	font-weight:800;
+	color:var(--green-900);
+	padding:8px 4px;
+}
+
+.calendar-day{
+	aspect-ratio:1;
+	display:flex;
+	align-items:center;
+	justify-content:center;
+	border-radius:10px;
+	cursor:pointer;
+	font-size:14px;
+	font-weight:600;
+	color:var(--golf-green-dark);
+	border:2px solid transparent;
+	transition:all 0.2s ease;
+	position:relative;
+	background:linear-gradient(135deg, rgba(255,255,255,.5), rgba(168,213,168,.1));
+}
+
+.calendar-day:hover{
+	background:linear-gradient(135deg, var(--golf-green-pale), var(--golf-green-fairway));
+	color:white;
+	transform:scale(1.05);
+	box-shadow:0 4px 8px rgba(26,90,26,.2);
+}
+
+.calendar-day.other-month{
+	color:var(--slate-300);
+	opacity:0.4;
+}
+
+.calendar-day.today{
+	border-color:var(--golf-flag);
+	font-weight:700;
+	box-shadow:0 0 0 2px rgba(217,119,6,.2);
+}
+
+.calendar-day.selected{
+	background:linear-gradient(135deg, var(--golf-green) 0%, var(--golf-green-light) 100%);
+	color:white;
+	font-weight:700;
+	box-shadow:var(--shadow-green);
+	transform:scale(1.08);
+}
+
+.calendar-day.has-events::after{
+	content:'⛳';
+	position:absolute;
+	bottom:2px;
+	font-size:8px;
+	filter:drop-shadow(0 1px 2px rgba(0,0,0,.2));
+}
+
+.calendar-day.selected.has-events::after{
+	filter:drop-shadow(0 1px 2px rgba(255,255,255,.5));
+}
+
+.calendar-actions{
+	display:flex;
+	flex-direction:column;
+	gap:8px;
+	padding-top:16px;
+	border-top:1px solid var(--line);
+}
+
+.calendar-actions button{
+	width:100%;
+}
+
+.handicap-link{
+	display:block;
+	width:100%;
+	text-align:center;
+	padding:0.44rem 0.7rem;
+	border-radius:12px;
+	border:1px solid var(--green-500);
+	background:#fff;
+	color:var(--green-700);
+	text-decoration:none;
+	font-weight:500;
+	box-shadow:var(--shadow-sm);
+	transition:all 0.2s ease;
+}
+
+.handicap-link:hover{
+	background:var(--green-500);
+	color:#fff;
+	transform:translateY(-1px);
+	box-shadow:0 6px 16px rgba(34,197,94,.25);
+}
+
+.events-container{
+	min-height:400px;
+}
+
+.events-header{
+	margin-bottom:16px;
+}
+
+.events-header h2{
+	margin:0;
+	font-size:24px;
+	font-weight:700;
+	color:#ffffff;
+	text-shadow:0 2px 8px rgba(0,0,0,0.5);
+}
+
+#events{max-width:100%;margin:0;display:grid;gap:18px;grid-template-columns:repeat(auto-fill,minmax(340px,1fr))}
+.card{
+	background:linear-gradient(135deg, rgba(255,255,255,.98) 0%, rgba(168,213,168,.15) 100%);
+	border:2px solid var(--golf-green-fairway);
+	border-radius:var(--radius);
+	box-shadow:var(--shadow-green);
+	display:grid;
+	grid-template-rows: auto auto;
+	min-height:300px;
+	position:relative;
+	overflow:visible;
+}
+.card::before{
+	content:'';
+	position:absolute;
+	top:-50px;
+	right:-50px;
+	width:150px;
+	height:150px;
+	background:radial-gradient(circle, rgba(45,122,45,.08) 0%, transparent 70%);
+	border-radius:50%;
+	pointer-events:none;
+}
+.card::after{
+	content:'⛳';
+	position:absolute;
+	bottom:10px;
+	right:15px;
+	font-size:32px;
+	opacity:0.08;
+	pointer-events:none;
+	transform:rotate(-15deg);
+}
+
+.card-header{
+	position:sticky;
+	top:0;
+	z-index:2;
+	background:var(--panel);
+	padding:16px 20px;
+	border-bottom:1px solid var(--line);
+	border-radius:var(--radius) var(--radius) 0 0;
+	box-shadow:0 2px 4px rgba(0,0,0,0.05);
+	display:grid;
+	grid-template-columns:1fr auto;
+	gap:20px;
+	align-items:start;
+	position:relative;
+}
+
+.weather-inline{
+	display:inline-block;
+	margin-left:8px;
+	font-size:20px;
+	line-height:1;
+	cursor:help;
+	vertical-align:middle;
+	filter:drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+	transition:transform 0.2s ease;
+}
+
+.weather-inline:hover{
+	transform:scale(1.15);
+}
+
+.card-header-left{
+	min-width:0;
+}
+
+.card-title{
+	margin:0 0 6px;
+	font-size:22px;
+	font-weight:800;
+	color:var(--green-700);
+	letter-spacing:-0.01em;
+}
+.card-title::before{content:'🏌️ '}
+
+.card-date{
+	color:var(--slate-700);
+	font-size:0.95rem;
+	font-weight:500;
+}
+
+.card-header .button-row{
+	display:flex;
+	flex-direction:column;
+	gap:8px;
+	flex-shrink:0;
+}
+
+.card-header .button-row button{
+	width:120px;
+	font-weight:500;
+}
+
+.card-content{
+	padding:20px;
+	display:flex;
+	flex-direction:column;
+	gap:12px;
+	overflow-y:visible;
+	min-height:0;
+}
+
+.notes{
+	color:var(--slate-700);
+	padding-top:8px;
+	border-top:1px solid var(--line);
+}
+button{
+	appearance:none;cursor:pointer;padding:.5rem .8rem;border-radius:10px;
+	border:2px solid var(--golf-green-fairway);
+	background:linear-gradient(135deg, #ffffff 0%, var(--golf-green-pale) 100%);
+	color:var(--golf-green-dark);font-weight:600;
+	box-shadow:0 2px 6px rgba(26,90,26,.15);
+	transition:all 0.2s ease;
+}
+button:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(26,90,26,.25);
+	background:linear-gradient(135deg, var(--golf-green-fairway) 0%, var(--golf-green-light) 100%);color:white}
+button.small{padding:.35rem .6rem;font-size:.88rem}
+button.primary{
+	background:linear-gradient(135deg, var(--golf-green) 0%, var(--golf-green-light) 100%);
+	color:#fff;border-color:var(--golf-green-dark);
+	box-shadow:var(--shadow-green);
+}
+button.primary:hover{background:linear-gradient(135deg, var(--golf-green-dark) 0%, var(--golf-green) 100%)}
+button[disabled]{opacity:.5;cursor:not-allowed;filter:grayscale(0.5)}
+.tees{
+	display:grid;
+	gap:16px;
+	margin:0;
+	align-content:start;
+}
+
+.tee{
+	display:grid;
+	grid-template-rows: auto 1fr auto;
+	background:var(--panel-ghost);
+	border:1px solid var(--line);
+	border-radius:var(--radius);
+	overflow:hidden;
+	min-height:120px; /* slightly reduced card height for compactness */
+}
+
+.tee-header{
+	display:flex;
+	justify-content:space-between;
+	align-items:center;
+	padding:12px 16px;
+	background:var(--panel);
+	border-bottom:1px solid var(--line);
+}
+
+.tee-time{
+	font-size:16px;
+	font-weight:700;
+	letter-spacing:0.2px;
+	color:var(--green-700);
+	margin:0;
+}
+
+.tee-content{
+	padding:16px;
+	display:grid;
+	gap:16px;
+}
+
+.tee-players{
+	display:grid;
+	grid-template-columns:repeat(2, 1fr);
+	column-gap:8px; /* tighter columns */
+	row-gap:6px; /* tighter rows */
+	align-content:start;
+	min-height:40px; /* reduced to allow more compact lists */
+	padding:0 2px 2px; /* trim wrapper padding */
+}
+
+.chip{
+	display:flex;
+	align-items:center;
+	justify-content:space-between;
+	background:#fff;
+	border:1px solid var(--slate-200);
+	border-radius:var(--radius);
+	padding-block:4px; /* reduce vertical padding */
+	padding-inline:8px; /* slightly tighter horizontal padding */
+	box-shadow:var(--shadow-sm);
+	transition:all 0.18s ease;
+	min-height:32px; /* allow natural height but keep compact baseline */
+	height:auto;
+	position:relative; /* allow centering the label while keeping actions at right */
+}
+
+
+.chip:hover{
+	border-color:var(--slate-300);
+	box-shadow:0 2px 4px rgba(0,0,0,.08);
+}
+
+.chip-label{
+	display:block;
+	max-width:calc(100% - 64px); /* leave room for action buttons */
+	min-width:0;
+	white-space:nowrap;
+	overflow:hidden;
+	text-overflow:ellipsis;
+	font-weight:500;
+	color:var(--green-700);
+	letter-spacing:0.1px;
+	line-height:1.05; /* slightly taller than 1 to avoid clipping */
+	font-size:0.92rem; /* slight font-size reduction */
+	margin:0 auto; /* center horizontally inside the chip */
+	text-align:center;
+}
+
+.chip-actions{
+	display:flex;
+	gap:4px;
+	margin-left:6px;
+	padding-left:6px;
+	border-left:1px solid var(--slate-200);
+	position:absolute; /* keep actions visually at the right when label is centered */
+	right:6px;
+	top:50%;
+	transform:translateY(-50%);
+}
+
+.chip button{
+	padding:3px;
+	width:22px;
+	height:22px;
+	line-height:1;
+	border:none;
+	border-radius:5px;
+	background:transparent;
+	cursor:pointer;
+	color:var(--slate-700);
+	box-shadow:none;
+	transition:all 0.16s ease;
+	display:inline-flex; /* ensure icons center vertically in small chips */
+	align-items:center;
+	justify-content:center;
+}
+
+.chip button:hover{
+	background:var(--slate-200);
+	color:var(--green-700);
+	transform:none;
+}
+
+.chip button.danger:hover{
+	background:#fee2e2;
+	color:#dc2626;
+}
+
+dialog::backdrop{
+	background:rgba(2,6,23,.30);
+	backdrop-filter:blur(2px);
+}
+/* Ensure dialogs are above sticky header and other UI chrome to avoid visual overlap */
+dialog::backdrop{z-index:9999}
+dialog{border:none;border-radius:16px;padding:16px 18px;background:#fff;box-shadow:var(--shadow);z-index:10000}
+dialog form{display:grid;gap:10px;min-width:320px} menu{display:flex;gap:8px;justify-content:flex-end;margin:0;padding:0}
+.radio-group{display:grid;gap:8px} .radio-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--slate-300);border-radius:12px;background:#fff}
+label{display:grid;gap:4px;font-size:14px} input,textarea{padding:.5rem .6rem;border-radius:12px;border:1px solid var(--slate-300);background:#fff}
+
+@media (max-width:1200px) {
+	.main-layout {
+		grid-template-columns: 320px 1fr;
+		gap: 16px;
+	}
+  
+	.calendar-sidebar {
+		padding: 16px;
+	}
+}
+
+@media (max-width:1024px) {
+	.main-layout {
+		grid-template-columns: 1fr;
+		gap: 16px;
+	}
+  
+	.calendar-sidebar {
+		position: static;
+		max-width: 400px;
+		margin: 0 auto;
+	}
+  
+	#events {
+		grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+		gap: 14px;
+	}
+  
+	.card-content {
+		gap: 14px;
+	}
+}
+
+@media (max-width:768px) {
+	#events {
+		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+		gap: 12px;
+		margin: 12px auto 40px auto;
+	}
+  
+	.tee-content {
+		padding: 14px;
+	}
+  
+	.chip {
+		padding-block:3px;
+		padding-inline:8px;
+		min-height:30px;
+		height:auto;
+	}
+}
+
+@media (max-width:560px){
+	header{flex-wrap:wrap;gap:10px}
+	header .subscribe{order:3;width:100%}
+	header input[type=email]{flex:1;min-width:0}
+
+	/* Adjust to single column on very small screens */
+	.tee-players{
+		grid-template-columns:1fr;
+		gap:8px;
+	}
+  
+	.card-header {
+		padding: 14px 16px;
+	}
+  
+	.card-content {
+		padding: 16px;
+		gap: 12px;
+	}
+  
+	.chip {
+		padding-block:3px;
+		padding-inline:8px;
+		min-height:30px;
+		height:auto;
+	}
+  
+	.chip-label {
+		font-size: 0.90rem;
+	}
+}
+
+.chip .danger{ border-color:#ef4444; }
+.chip .danger:hover{ background:#fee2e2; }
+
+/* Prevent player chips and action buttons from overflowing / overlapping
+	by allowing flex children to shrink and truncating long chip labels. */
+/* Let cards expand vertically and avoid clipping wrapped chip content */
+.card{overflow:visible}
+
+/* Tee meta: header layout for time/name and remove button */
+.tee-meta{
+	display:flex;
+	align-items:center;
+	gap:12px;
+}
+
+.tee-meta{
+	display:flex;
+	align-items:center;
+	gap:12px;
+	justify-content:center; /* center the tee/team label horizontally */
+	position:relative; /* allow absolute-positioned actions to sit on the right */
+}
+
+.tee-actions{
+	display:flex;
+	gap:6px;
+	position:absolute; /* position the action buttons at the right edge */
+	right:12px;
+	top:50%;
+	transform:translateY(-50%);
+	margin-left:0;
+}
+
+.tee-actions .icon{
+	padding:.12rem .4rem;
+}
+
+.tee-time{
+	text-align:center; /* ensure the time/team name is centered */
+	width:100%;
+}
+
+/* Add player button position */
+.tee .row{
+	padding:8px 16px 12px; /* trimmed vertical padding for Add Player row */
+	background:var(--panel);
+	border-top:1px solid var(--line);
+	display:flex;
+	justify-content:center;
+}
+
+.tee .row button{
+	min-width:120px;
+	text-align:center;
+	font-weight:500;
+	background:var(--panel);
+	border:1px solid var(--slate-300);
+	transition:all 0.2s ease;
+}
+
+.tee .row button:hover{
+	border-color:var(--green-500);
+	color:var(--green-600);
+	background:#fff;
+}
+
+/* Maybe List styles */
+.maybe-section{
+	background:linear-gradient(135deg, rgba(251,191,36,0.08), rgba(251,191,36,0.04));
+	border:1px solid rgba(251,191,36,0.3);
+	border-radius:8px;
+	padding:6px 10px;
+	margin-bottom:10px;
+}
+
+.maybe-header{
+	display:flex;
+	justify-content:space-between;
+	align-items:center;
+	margin-bottom:4px;
+	gap:8px;
+}
+
+.maybe-header h4{
+	font-size:13px;
+	margin:0;
+	font-weight:600;
+	color:var(--slate-700);
+}
+
+.maybe-list{
+	display:flex;
+	flex-wrap:wrap;
+	gap:4px;
+	min-height:20px;
+}
+
+.maybe-chip{
+	display:inline-flex;
+	align-items:center;
+	gap:4px;
+	background:#fff;
+	border:1px solid rgba(251,191,36,0.4);
+	border-radius:6px;
+	padding:2px 6px;
+	font-size:12px;
+	box-shadow:0 1px 2px rgba(0,0,0,0.08);
+	transition:all 0.2s ease;
+}
+
+.maybe-chip:hover{
+	border-color:rgba(251,191,36,0.6);
+	box-shadow:0 2px 4px rgba(0,0,0,0.15);
+}
+
+.maybe-name{
+	color:var(--slate-900);
+	font-weight:500;
+}
+
+.maybe-chip button{
+	padding:1px;
+	width:14px;
+	height:14px;
+	border:none;
+	background:transparent;
+	color:var(--slate-700);
+	cursor:pointer;
+	display:flex;
+	align-items:center;
+	justify-content:center;
+	border-radius:3px;
+	transition:all 0.15s;
+	font-size:10px;
+}
+
+.maybe-chip button:hover{
+	background:#fee2e2;
+	color:#dc2626;
+	transform:none;
+}
+
+/* Handicap page styles */
+.handicap-container{
+	max-width:1400px;
+	margin:0 auto;
+}
+
+.handicap-header{
+	margin-bottom:24px;
+}
+
+.handicap-grid{
+	display:grid;
+	grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));
+	gap:20px;
+}
+
+.handicap-card{
+	background:var(--panel);
+	border:1px solid var(--line);
+	border-radius:var(--radius);
+	box-shadow:var(--shadow);
+	overflow:hidden;
+}
+
+.handicap-card-header{
+	display:flex;
+	justify-content:space-between;
+	align-items:flex-start;
+	padding:16px;
+	border-bottom:1px solid var(--line);
+	background:var(--panel);
+}
+
+.handicap-actions{
+	display:flex;
+	gap:4px;
+}
+
+.handicap-card-body{
+	padding:20px;
+	display:grid;
+	gap:16px;
+}
+
+.handicap-display{
+	text-align:center;
+	padding:20px;
+	background:linear-gradient(135deg, rgba(34,197,94,0.1), rgba(22,163,74,0.05));
+	border-radius:12px;
+	border:2px solid var(--green-500);
+}
+
+.handicap-index{
+	font-size:48px;
+	font-weight:800;
+	color:var(--green-700);
+	line-height:1;
+}
+
+.handicap-label{
+	font-size:13px;
+	font-weight:600;
+	color:var(--slate-700);
+	text-transform:uppercase;
+	letter-spacing:0.5px;
+	margin-top:8px;
+}
+
+.handicap-meta{
+	display:grid;
+	gap:4px;
+}
+
+.status{
+	display:inline-block;
+	padding:4px 10px;
+	border-radius:6px;
+	font-size:12px;
+	font-weight:600;
+	width:fit-content;
+}
+
+.status.success{
+	background:#dcfce7;
+	color:#166534;
+}
+
+.status.error{
+	background:#fee2e2;
+	color:#dc2626;
+}
+
+.status.pending{
+	background:#fef3c7;
+	color:#92400e;
+}
+
+nav a{
+	transition:all 0.2s ease;
+}
+
+nav a:hover{
+	color:var(--green-500) !important;
+}
+
+@media (max-width:768px){
+	.handicap-grid{
+		grid-template-columns:1fr;
+	}
+}
+
+/* Full tee time visual indicator */
+.tee.tee-full{
+	background:linear-gradient(135deg, rgba(220,220,220,.9) 0%, rgba(200,200,200,.85) 100%);
+	border:2px solid #999;
+	opacity:0.7;
+}
+.tee.tee-full .tee-header{
+	background:linear-gradient(135deg, rgba(200,200,200,.95) 0%, rgba(180,180,180,.9) 100%);
+	border-bottom:2px solid #999;
+}
+.tee.tee-full .tee-time{
+	color: #666;
+}
+.tee.tee-full .tee-time::after{
+	content:' (FULL)';
+	font-size:12px;
+	font-weight:700;
+	color: #dc2626;
+	margin-left:8px;
+}

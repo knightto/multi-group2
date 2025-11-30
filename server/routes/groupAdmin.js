@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Event = require('../models/Event');
-const TeeTime = require('../models/TeeTime');
-const Team = require('../models/Team');
+// TeeTime and Team models are deprecated for event management. Use Event model only.
 const Subscriber = require('../models/Subscriber');
 const Group = require('../models/Group');
 
@@ -57,9 +56,8 @@ router.delete('/:groupId/events/:eventId', async (req, res) => {
     event.isActive = false;
     await event.save();
 
-    // Clean up associated tee times and teams
-    await TeeTime.deleteMany({ eventId });
-    await Team.deleteMany({ eventId });
+
+    // No need to clean up embedded teeTimes/teams; handled in Event model
 
     res.json({ success: true });
   } catch (err) {

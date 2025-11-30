@@ -1,19 +1,90 @@
-<!DOCTYPE html>
+
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Group Events</title>
+  <title>Group Calendar & Events</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container" id="groupContainer">
-    <div id="groupHeader"></div>
-    <div id="eventsSection"></div>
-    <div style="margin-top:2em;font-size:0.95em;">
-      <a href="#" id="adminLink">Admin? Click here and enter admin code</a>
+  <header class="bar">
+    <h1 class="title">Group Events</h1>
+    <nav style="display:flex;gap:12px;align-items:center;margin-left:auto">
+      <a href="home.html" style="color:white;text-decoration:none;padding:6px 12px;border:1px solid rgba(255,255,255,0.3);border-radius:8px;font-weight:600;font-size:13px;transition:all 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">Switch Group</a>
+      <a href="#" id="adminLink" style="color:white;text-decoration:none;padding:8px 16px;border:1px solid rgba(255,255,255,0.3);border-radius:8px;font-weight:600;font-size:14px;transition:all 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">Admin</a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <div class="main-layout">
+      <!-- Left sidebar: Calendar -->
+
+      <aside class="calendar-sidebar">
+        <div class="calendar-header">
+          <button id="prevMonth" class="icon" title="Previous month">&#x2039;</button>
+          <h2 id="currentMonth">Month Year</h2>
+          <button id="nextMonth" class="icon" title="Next month">&#x203a;</button>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+        <div class="calendar-actions">
+          <button id="newTeeBtn" class="primary">New Tee-Time Event</button>
+          <button id="newTeamBtn" class="primary">New Team Event</button>
+        </div>
+      </aside>
+
+      <!-- Right side: Events -->
+      <div class="events-container">
+        <div class="events-header">
+          <h2 id="selectedDateTitle">Select a date</h2>
+        </div>
+        <div id="events"></div>
+      </div>
     </div>
-  </div>
+  <!-- Event/calendar UI removed -->
+      <!-- Team fields (shown only for Team events) -->
+      <div id="teamSizeRow" hidden style="background:linear-gradient(135deg,#fce7f3 0%,#fbcfe8 100%);padding:12px;border-radius:8px;margin-bottom:12px">
+        <label style="display:block;margin-bottom:8px">
+          <span style="display:flex;align-items:center;gap:4px;font-weight:600;color:#831843;margin-bottom:6px;font-size:14px">
+            <span>👥</span> Team Size Max
+          </span>
+          <input name="teamSizeMax" type="number" min="2" max="4" value="4" style="width:100%;padding:8px;border:2px solid #f9a8d4;border-radius:6px;font-size:14px">
+        </label>
+        <label style="display:block;margin-bottom:8px">
+          <span style="display:flex;align-items:center;gap:4px;font-weight:600;color:#831843;margin-bottom:6px;font-size:14px">
+            <span>🏁</span> Start Type
+          </span>
+          <select name="teamStartType" id="teamStartType" style="width:100%;padding:8px;border:2px solid #f9a8d4;border-radius:6px;font-size:14px;background:white">
+            <option value="shotgun">Shotgun Start (all teams start at same time)</option>
+            <option value="teetimes">Tee Time Start (teams start at different times)</option>
+          </select>
+        </label>
+        <div id="teamStartTimeField">
+          <label>
+            <span style="display:flex;align-items:center;gap:4px;font-weight:600;color:#831843;margin-bottom:6px;font-size:14px">
+              <span>⏰</span> Start Time
+            </span>
+            <input name="teamStartTime" id="teamStartTime" type="time" step="60" required style="width:100%;padding:8px;border:2px solid #f9a8d4;border-radius:6px;font-size:14px">
+          </label>
+          <p id="teamStartHint" style="font-size:11px;color:#831843;margin:6px 0 0 0;font-style:italic">All teams start at this time</p>
+        </div>
+      </div>
+      <!-- Notes Section -->
+      <label style="display:block;margin-bottom:12px">
+        <span style="display:flex;align-items:center;gap:4px;font-weight:600;color:#475569;margin-bottom:6px;font-size:14px">
+          <span>📝</span> Notes (Optional)
+        </span>
+        <textarea name="notes" rows="2" placeholder="Optional notes..." style="width:100%;padding:8px;border:2px solid #cbd5e1;border-radius:6px;font-size:13px;resize:vertical"></textarea>
+      </label>
+      <!-- internal: chosen create mode -->
+      <input type="hidden" name="mode" id="createMode" value="tees">
+      <menu>
+        <button type="button" data-cancel>Cancel</button>
+        <button type="submit" class="primary">Create</button>
+      </menu>
+    </form>
+  </dialog>
+
   <script src="group.js"></script>
 </body>
 </html>
