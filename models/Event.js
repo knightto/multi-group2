@@ -15,6 +15,7 @@ const SlotSchema = new mongoose.Schema({
 }, { _id: true });
 
 const EventSchema = new mongoose.Schema({
+  groupId: { type: mongoose.Schema.Types.ObjectId, ref: 'Group', index: true },
   course: { type: String, required: true, trim: true },
   courseInfo: {
     city: { type: String, default: null },
@@ -65,5 +66,6 @@ EventSchema.pre('validate', function(next){
 EventSchema.index({ date: 1 });
 EventSchema.index({ isTeamEvent: 1 });
 EventSchema.index({ 'teeTimes._id': 1 });
+EventSchema.index({ groupId: 1, date: 1 });
 
 module.exports = mongoose.model('Event', EventSchema);

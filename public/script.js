@@ -101,6 +101,8 @@ if ('serviceWorker' in navigator) {
   const lastUpdatedEl = $('#lastUpdated');
 
   // State
+  const urlParams = new URLSearchParams(window.location.search);
+  let currentGroupId = urlParams.get('groupId') || null;
   let allEvents = [];
   let currentDate = new Date();
   let selectedDate = null;
@@ -273,15 +275,55 @@ if ('serviceWorker' in navigator) {
     }
     return data;
   }
+  function shouldAttachGroup(path) {
+    return path.startsWith('/api/events');
+  }
+  function attachGroup(path, opts) {
+    if (!shouldAttachGroup(path) || !currentGroupId) return { url: path, body: opts?.body };
+    const url = new URL(path, window.location.origin);
+    if (!url.searchParams.get('groupId')) url.searchParams.set('groupId', currentGroupId);
+    let body = opts?.body;
+    if (body && typeof body === 'string' && opts?.headers && String(opts.headers['Content-Type'] || '').includes('application/json')) {
+      try {
+        const parsed = JSON.parse(body);
+        if (!parsed.groupId) parsed.groupId = currentGroupId;
+        body = JSON.stringify(parsed);
+      } catch (_) { /* ignore JSON parse errors */ }
+    }
+    return { url: url.pathname + url.search, body };
+  }
+  async function ensureGroup() {
+    if (currentGroupId) return currentGroupId;
+    try {
+      const res = await fetch('/api/groups/default');
+      if (res.ok) {
+        const group = await res.json();
+        currentGroupId = group?._id || null;
+        if (currentGroupId) {
+          const url = new URL(window.location.href);
+          url.searchParams.set('groupId', currentGroupId);
+          window.history.replaceState({}, '', url.toString());
+        }
+      }
+    } catch (_) {
+      // Fail silently; downstream API calls will surface issues
+    }
+    return currentGroupId;
+  }
   async function api(path, opts){ 
-    debugLog('info', `API Request: ${opts?.method || 'GET'} ${path}`, opts?.body ? JSON.parse(opts.body) : null);
+    let debugBody = null;
+    if (opts?.body) {
+      try { debugBody = JSON.parse(opts.body); } catch (_) { debugBody = opts.body; }
+    }
+    debugLog('info', `API Request: ${opts?.method || 'GET'} ${path}`, debugBody);
     
     // Add timeout for slow requests
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
     
     try {
-      const r=await fetch(path, { ...opts, signal: controller.signal }); 
+      const { url, body } = attachGroup(path, opts);
+      const r=await fetch(url, { ...opts, body, signal: controller.signal }); 
       clearTimeout(timeoutId);
       
       const ct=r.headers.get('content-type')||''; 
@@ -643,6 +685,13 @@ if ('serviceWorker' in navigator) {
   // No MutationObserver: only call load() after successful actions
 
   async function load(force=false){ 
+    if (!currentGroupId) {
+      await ensureGroup();
+      if (!currentGroupId) {
+        eventsEl.innerHTML = '<div class="card">No group selected.</div>';
+        return;
+      }
+    }
     if (isLoading) { 
       loadPending = true; 
       return; 
@@ -1475,6 +1524,8 @@ if ('serviceWorker' in navigator) {
   }
 
   updateLastUpdated('Loading…');
-  load();
-  startAutoRefresh();
+  ensureGroup().then(() => {
+    load();
+    startAutoRefresh();
+  });
 })();

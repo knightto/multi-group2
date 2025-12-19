@@ -56,6 +56,7 @@ app.set('trust proxy', 1);
 app.use(express.json());
 const PORT = process.env.PORT || 5000;
 const ADMIN_DELETE_CODE = process.env.ADMIN_DELETE_CODE || '';
+const SITE_ADMIN_CODE = '123';
 const SITE_URL = (process.env.SITE_URL || 'https://tee-time-brs.onrender.com/').replace(/\/$/, '') + '/';
 const LOCAL_TZ = process.env.LOCAL_TZ || 'America/New_York';
 
@@ -102,6 +103,75 @@ app.get('/api/health', (_req, res) => {
       nodeEnv: process.env.NODE_ENV || 'development'
     }
   });
+});
+
+// --- Group management ---
+app.get('/api/groups/default', async (_req, res) => {
+  try {
+    const g = await getDefaultGroup();
+    res.json(g);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/groups/access', async (req, res) => {
+  const accessCode = String(req.body?.accessCode || '').trim();
+  if (!accessCode) return res.status(400).json({ error: 'Access code required' });
+  const group = await Group.findOne({ accessCode, isActive: { $ne: false } });
+  if (!group) return res.status(404).json({ error: 'Invalid access code' });
+  res.json(group);
+});
+
+app.get('/api/groups', async (req, res) => {
+  const code = req.query.code || req.body?.code || '';
+  if (code !== SITE_ADMIN_CODE) return res.status(403).json({ error: 'Forbidden' });
+  const groups = await Group.find().sort({ createdAt: -1 });
+  res.json(groups);
+});
+
+app.post('/api/groups', async (req, res) => {
+  const code = req.body?.code || '';
+  if (code !== SITE_ADMIN_CODE) return res.status(403).json({ error: 'Forbidden' });
+  const { name, description, template, logoUrl } = req.body || {};
+  if (!name) return res.status(400).json({ error: 'Name is required' });
+  const accessCode = await nextAccessCode();
+  const created = await Group.create({
+    name,
+    description: description || '',
+    template: template || 'golf',
+    logoUrl: logoUrl || '',
+    accessCode,
+    isActive: true
+  });
+  res.status(201).json(created);
+});
+
+app.get('/api/groups/:id', async (req, res) => {
+  const group = await Group.findById(req.params.id);
+  if (!group) return res.status(404).json({ error: 'Group not found' });
+  res.json(group);
+});
+
+app.get('/api/groups/:id/events', async (req, res) => {
+  const group = await Group.findById(req.params.id);
+  if (!group) return res.status(404).json({ error: 'Group not found' });
+  const filter = buildGroupEventFilter(group);
+  const events = await Event.find(filter).sort({ date: 1 });
+  res.json(events);
+});
+
+app.delete('/api/groups/:id', async (req, res) => {
+  const code = req.query.code || req.body?.code || '';
+  if (code !== SITE_ADMIN_CODE) return res.status(403).json({ error: 'Forbidden' });
+  const group = await Group.findById(req.params.id);
+  if (!group) return res.status(404).json({ error: 'Group not found' });
+  if (group.accessCode === DEFAULT_ACCESS_CODE) {
+    return res.status(400).json({ error: 'Default group cannot be removed' });
+  }
+  group.isActive = !group.isActive;
+  await group.save();
+  res.json({ ok: true, group });
 });
 
 
@@ -327,6 +397,64 @@ mongoose.connect(mongoUri, { dbName: process.env.MONGO_DB || undefined })
   .catch((e) => { console.error('Mongo connection error', e); process.exit(1); });
 
 let Event; try { Event = require('./models/Event'); } catch { Event = require('./Event'); }
+let Group; try { Group = require('./models/Group'); } catch { Group = require('./Group'); }
+
+// --- Group helpers ---
+const DEFAULT_ACCESS_CODE = '100';
+async function nextAccessCode() {
+  const last = await Group.findOne()
+    .collation({ locale: 'en', numericOrdering: true })
+    .sort({ accessCode: -1 })
+    .lean();
+  const lastNum = last && last.accessCode ? parseInt(last.accessCode, 10) : 99;
+  const next = Number.isFinite(lastNum) ? Math.max(99, lastNum) + 1 : 100;
+  return String(next < 100 ? 100 : next);
+}
+async function getDefaultGroup() {
+  try {
+    let g = await Group.findOne({ accessCode: DEFAULT_ACCESS_CODE });
+    if (g) return g;
+    await Group.create({
+      name: 'Main Group',
+      description: 'Default group',
+      template: 'golf',
+      accessCode: DEFAULT_ACCESS_CODE,
+      isActive: true
+    });
+    return await Group.findOne({ accessCode: DEFAULT_ACCESS_CODE });
+  } catch (err) {
+    // If creation failed due to race, re-fetch; otherwise surface
+    const fallback = await Group.findOne({ accessCode: DEFAULT_ACCESS_CODE });
+    if (fallback) return fallback;
+    throw err;
+  }
+}
+async function resolveGroup(req) {
+  const id = req.query.groupId || req.body?.groupId || req.headers['x-group-id'];
+  if (id) {
+    const group = await Group.findById(id);
+    if (group && group.isActive !== false) return group;
+    return null;
+  }
+  return await getDefaultGroup();
+}
+function buildGroupEventFilter(group) {
+  if (!group) return {};
+  // Default group can read legacy events without a groupId
+  if (group.accessCode === DEFAULT_ACCESS_CODE) {
+    return { $or: [{ groupId: group._id }, { groupId: null }, { groupId: { $exists: false } }] };
+  }
+  return { groupId: group._id };
+}
+async function findEventScoped(req) {
+  const group = await resolveGroup(req);
+  const ev = await Event.findById(req.params.id || req.body?.eventId);
+  if (!ev) return { group, ev: null };
+  if (group && ev.groupId && String(ev.groupId) !== String(group._id)) {
+    return { group, ev: null };
+  }
+  return { group, ev };
+}
 let Subscriber; try { Subscriber = require('./models/Subscriber'); } catch { Subscriber = null; }
 let AuditLog; try { AuditLog = require('./models/AuditLog'); } catch { AuditLog = null; }
 let Settings; try { Settings = require('./models/Settings'); } catch { Settings = null; }
@@ -692,15 +820,22 @@ function nextTeeTimeForEvent(ev, mins = 9, defaultTime = '07:00') {
   return defaultTime;
 }
 
-app.get('/api/events', async (_req, res) => {
-  const items = await Event.find().sort({ date: 1 }).lean();
-  res.json(items);
+app.get('/api/events', async (req, res) => {
+  try {
+    const group = await resolveGroup(req);
+    if (!group) return res.status(404).json({ error: 'Group not found' });
+    const filter = buildGroupEventFilter(group);
+    const items = await Event.find(filter).sort({ date: 1 }).lean();
+    res.json(items);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // Fetch a single event by id for targeted refreshes
 app.get('/api/events/:id', async (req, res) => {
   try {
-    const ev = await Event.findById(req.params.id).lean();
+    const { ev } = await findEventScoped(req);
     if (!ev) return res.status(404).json({ error: 'Event not found' });
     res.json(ev);
   } catch (e) {
@@ -710,6 +845,8 @@ app.get('/api/events/:id', async (req, res) => {
 
 app.post('/api/events', async (req, res) => {
   try {
+    const group = await resolveGroup(req);
+    if (!group) return res.status(400).json({ error: 'Invalid group' });
     const { course, courseInfo, date, teeTime, teeTimes, notes, isTeamEvent, teamSizeMax, teamStartType, teamStartTime } = req.body || {};
     let tt;
     if (isTeamEvent) {
@@ -743,6 +880,7 @@ app.post('/api/events', async (req, res) => {
     const weatherData = await fetchWeatherForecast(eventDate);
     
     const created = await Event.create({
+      groupId: group._id,
       course,
       courseInfo: courseInfo || {},
       date: eventDate,
@@ -773,7 +911,7 @@ app.post('/api/events', async (req, res) => {
 
 app.put('/api/events/:id', async (req, res) => {
   try {
-    const ev = await Event.findById(req.params.id);
+    const { ev } = await findEventScoped(req);
     if (!ev) return res.status(404).json({ error: 'Not found' });
     const { course, date, notes, isTeamEvent, teamSizeMax } = req.body || {};
     if (course !== undefined) ev.course = String(course);
@@ -789,7 +927,8 @@ app.put('/api/events/:id', async (req, res) => {
 app.delete('/api/events/:id', async (req, res) => {
   const code = req.query.code || req.body?.code || '';
   if (!ADMIN_DELETE_CODE || code !== ADMIN_DELETE_CODE) return res.status(403).json({ error: 'Forbidden' });
-  const del = await Event.findByIdAndDelete(req.params.id);
+  const { ev: del } = await findEventScoped(req);
+  if (del) await Event.findByIdAndDelete(req.params.id);
   if (!del) return res.status(404).json({ error: 'Not found' });
   
   // Send response immediately
@@ -809,7 +948,7 @@ app.delete('/api/events/:id', async (req, res) => {
 /* tee/team, players, move endpoints remain as in your current server.js */
 app.post('/api/events/:id/tee-times', async (req, res) => {
   // Clean logging: only log errors or important info
-  const ev = await Event.findById(req.params.id);
+  const { ev } = await findEventScoped(req);
   if (!ev) {
     console.error('[tee-time] Add failed: event not found', { eventId: req.params.id });
     return res.status(404).json({ error: 'Not found' });
@@ -908,7 +1047,7 @@ app.post('/api/events/:id/tee-times', async (req, res) => {
 // Edit tee time or team name
 app.put('/api/events/:id/tee-times/:teeId', async (req, res) => {
   try {
-    const ev = await Event.findById(req.params.id);
+    const { ev } = await findEventScoped(req);
     if (!ev) return res.status(404).json({ error: 'Not found' });
     
     const tt = ev.teeTimes.id(req.params.teeId);
@@ -942,6 +1081,8 @@ app.put('/api/events/:id/tee-times/:teeId', async (req, res) => {
 app.delete('/api/events/:id/tee-times/:teeId', async (req, res) => {
   try {
     console.log('[tee-time] Remove request', { eventId: req.params.id, teeId: req.params.teeId });
+    const { ev: scopedEvent } = await findEventScoped(req);
+    if (!scopedEvent) return res.status(404).json({ error: 'Not found' });
     // Use $pull to remove the tee/team atomically
     const ev = await Event.findByIdAndUpdate(
       req.params.id,
@@ -976,7 +1117,7 @@ app.post('/api/events/:id/tee-times/:teeId/players', async (req, res) => {
   const trimmedName = String(name).trim();
   if (!trimmedName) return res.status(400).json({ error: 'name cannot be empty' });
 
-  const ev = await Event.findById(req.params.id);
+  const { ev } = await findEventScoped(req);
   if (!ev) return res.status(404).json({ error: 'Not found' });
   const tt = ev.teeTimes.id(req.params.teeId);
   if (!tt) return res.status(404).json({ error: 'tee time not found' });
@@ -1032,7 +1173,7 @@ app.post('/api/events/:id/tee-times/:teeId/players', async (req, res) => {
 });
 app.delete('/api/events/:id/tee-times/:teeId/players/:playerId', async (req, res) => {
   try {
-    const ev = await Event.findById(req.params.id);
+    const { ev } = await findEventScoped(req);
     if (!ev) return res.status(404).json({ error: 'Not found' });
     const tt = ev.teeTimes.id(req.params.teeId);
     if (!tt) return res.status(404).json({ error: 'tee/team not found' });
@@ -1087,7 +1228,7 @@ app.delete('/api/events/:id/tee-times/:teeId/players/:playerId', async (req, res
 app.post('/api/events/:id/move-player', async (req, res) => {
   const { fromTeeId, toTeeId, playerId } = req.body || {};
   if (!fromTeeId || !toTeeId || !playerId) return res.status(400).json({ error: 'fromTeeId, toTeeId, playerId required' });
-  const ev = await Event.findById(req.params.id);
+  const { ev } = await findEventScoped(req);
   if (!ev) return res.status(404).json({ error: 'Not found' });
   const fromTT = ev.teeTimes.id(fromTeeId);
   const toTT = ev.teeTimes.id(toTeeId);
@@ -1418,7 +1559,7 @@ app.get('/api/golf-courses/search', async (req, res) => {
 // Refresh weather for an event
 app.post('/api/events/:id/weather', async (req, res) => {
   try {
-    const ev = await Event.findById(req.params.id);
+    const { ev } = await findEventScoped(req);
     if (!ev) return res.status(404).json({ error: 'Not found' });
     
     const weatherData = await fetchWeatherForecast(ev.date);
@@ -1491,7 +1632,7 @@ app.post('/api/events/:id/maybe', async (req, res) => {
     const { name } = req.body || {};
     if (!name) return res.status(400).json({ error: 'name required' });
     
-    const ev = await Event.findById(req.params.id);
+    const { ev } = await findEventScoped(req);
     if (!ev) return res.status(404).json({ error: 'Not found' });
     
     if (!Array.isArray(ev.maybeList)) ev.maybeList = [];
@@ -1514,7 +1655,7 @@ app.post('/api/events/:id/maybe', async (req, res) => {
 // Remove player from maybe list
 app.delete('/api/events/:id/maybe/:index', async (req, res) => {
   try {
-    const ev = await Event.findById(req.params.id);
+    const { ev } = await findEventScoped(req);
     if (!ev) return res.status(404).json({ error: 'Not found' });
     
     if (!Array.isArray(ev.maybeList)) ev.maybeList = [];
@@ -1536,7 +1677,9 @@ app.delete('/api/events/:id/maybe/:index', async (req, res) => {
 app.get('/api/events/:id/audit-log', async (req, res) => {
   try {
     if (!AuditLog) return res.status(501).json({ error: 'Audit log not available' });
-    const logs = await AuditLog.find({ eventId: req.params.id })
+    const { ev } = await findEventScoped(req);
+    if (!ev) return res.status(404).json({ error: 'Not found' });
+    const logs = await AuditLog.find({ eventId: ev._id })
       .sort({ timestamp: -1 })
       .limit(200)
       .lean();

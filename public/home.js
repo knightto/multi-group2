@@ -11,7 +11,7 @@ document.getElementById('access-form').addEventListener('submit', async (e) => {
   });
   if (res.ok) {
     const group = await res.json();
-    window.location.href = `group.html?groupId=${group._id}`;
+    window.location.href = `/?groupId=${group._id}`;
   } else {
     const err = await res.json();
     errorDiv.textContent = err.error || 'Invalid access code.';
